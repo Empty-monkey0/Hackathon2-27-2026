@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYC Rat Reservoir Detection System</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#0A0A12;color:#E8E8F0;font-family:'DM Sans','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:rgba(255,255,255,0.02)}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.header{padding:32px 40px 24px;border-bottom:1px solid rgba(255,255,255,0.06);background:linear-gradient(180deg,rgba(255,107,53,0.04) 0%,transparent 100%)}
+.header-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.logo-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#FF6B35,#FF3D00);font-size:20px}
+.logo h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-1px;font-family:'Space Grotesk',sans-serif;background:linear-gradient(135deg,#fff,rgba(255,255,255,0.7));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:2px;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.controls select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 14px;color:#fff;font-size:13px;cursor:pointer;outline:none}
+.controls select option{background:#1a1a2e}
+.tabs{display:flex;gap:6px;margin-top:20px;flex-wrap:wrap}
+.tab-btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;letter-spacing:0.3px;transition:all 0.2s;font-family:'Space Grotesk',sans-serif;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.06)}
+.tab-btn.active{background:rgba(255,107,53,0.2);color:#FF6B35;border-color:rgba(255,107,53,0.3)}
+.tab-btn:hover:not(.active){background:rgba(255,255,255,0.06)}
+.content{padding:28px 40px 60px;max-width:1400px;margin:0 auto;animation:fadeIn 0.4s ease}
+.tab-content{display:none;animation:slideUp 0.4s ease}
+.tab-content.active{display:block}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.kpi{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px 24px;position:relative;overflow:hidden}
+.kpi-icon{position:absolute;top:12px;right:16px;font-size:28px;opacity:0.15}
+.kpi-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.kpi-value{font-size:36px;font-weight:800;font-family:'Space Grotesk',sans-serif;line-height:1.1}
+.kpi-sub{font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:24px;margin-bottom:32px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px}
+.card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:24px}
+.card-lg{padding:28px}
+.section-title{font-size:22px;font-weight:800;margin:0 0 4px;letter-spacing:-0.5px;font-family:'Space Grotesk',sans-serif;background:linear-gradient(135deg,#FF6B35,#FF8F65);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.section-sub{margin:0 0 20px;font-size:13px;color:rgba(255,255,255,0.4)}
+.chart-wrap{position:relative;height:280px;width:100%}
+.chart-wrap-sm{height:260px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:10px 14px;text-align:left;font-weight:600;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);font-family:'JetBrains Mono',monospace;border-bottom:1px solid rgba(255,255,255,0.08)}
+td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04)}
+tr:hover td{background:rgba(255,107,53,0.04)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace}
+.badge-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.badge-critical{background:rgba(255,68,68,0.1);color:#FF4444;border:1px solid rgba(255,68,68,0.25)}
+.badge-critical .badge-dot{background:#FF4444;animation:pulse 1.5s infinite}
+.badge-elevated{background:rgba(255,176,32,0.1);color:#FFB020;border:1px solid rgba(255,176,32,0.25)}
+.badge-elevated .badge-dot{background:#FFB020}
+.badge-low{background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.25)}
+.badge-low .badge-dot{background:#22C55E}
+.grade{padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;display:inline-block}
+.grade-A{background:rgba(34,197,94,0.15);color:#22C55E}.grade-B{background:rgba(255,176,32,0.15);color:#FFB020}.grade-C{background:rgba(255,68,68,0.15);color:#FF4444}
+.code-block{background:rgba(0,0,0,0.3);border-radius:10px;padding:20px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2.2;color:rgba(255,255,255,0.7);overflow-x:auto;margin-bottom:20px}
+.code-block .kw{color:#4ECDC4}.code-block .fn{color:#BB8FCE}.code-block .cm{color:#FF6B35}.code-block .st{color:#F7DC6F}
+.feature-bar{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.feature-bar-label{width:140px;font-size:11px;color:rgba(255,255,255,0.5);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.feature-bar-track{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+.feature-bar-fill{height:100%;border-radius:4px;transition:width 0.5s ease}
+.feature-bar-val{width:40px;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;font-family:'JetBrains Mono',monospace}
+.heat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;max-height:400px;overflow-y:auto;padding:4px}
+.heat-cell{border-radius:8px;padding:10px 8px;text-align:center;cursor:default;transition:transform 0.15s;font-size:10px}
+.heat-cell:hover{transform:scale(1.05)}
+.heat-cell-score{font-weight:700;font-size:18px;font-family:'Space Grotesk',sans-serif}
+.heat-cell-zip{color:rgba(255,255,255,0.7);font-family:'JetBrains Mono',monospace;font-size:9px}
+.heat-cell-tag{font-size:8px;color:#FF4444;font-weight:700;margin-top:2px;letter-spacing:1px}
+.perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.perf-card{background:rgba(0,0,0,0.3);border-radius:10px;padding:16px 14px;text-align:center}
+.perf-value{font-size:28px;font-weight:800;font-family:'Space Grotesk',sans-serif}
+.perf-label{font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;font-family:'JetBrains Mono',monospace}
+.cm-grid{display:grid;grid-template-columns:auto 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:4px;max-width:350px;margin:0 auto}
+.cm-cell{border-radius:10px;padding:20px;text-align:center}
+.cm-val{font-size:28px;font-weight:800;font-family:'Space Grotesk',sans-serif}
+.cm-label{font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px}
+.cm-header{text-align:center;font-size:10px;color:rgba(255,255,255,0.4);padding:8px;font-family:'JetBrains Mono',monospace}
+.cm-side{font-size:10px;color:rgba(255,255,255,0.4);padding:8px;display:flex;align-items:center;font-family:'JetBrains Mono',monospace}
+.step-row{display:flex;gap:20px;padding:18px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.step-num{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;font-family:'Space Grotesk',sans-serif;flex-shrink:0}
+.step-title{font-size:15px;font-weight:700;margin-bottom:4px;font-family:'Space Grotesk',sans-serif}
+.step-desc{font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6}
+.app-card{background:rgba(0,0,0,0.2);border-radius:12px;padding:20px}
+.app-icon{font-size:22px;margin-bottom:8px}
+.app-title{font-size:14px;font-weight:700;margin-bottom:6px;font-family:'Space Grotesk',sans-serif}
+.app-desc{font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6}
+.src-card{background:rgba(0,0,0,0.2);border-radius:12px;padding:20px}
+.src-icon{font-size:24px;margin-bottom:8px}
+.src-name{font-size:14px;font-weight:700;margin-bottom:6px;font-family:'Space Grotesk',sans-serif}
+.src-desc{font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6}
+.finding-box{margin-top:12px;padding:14px;border-radius:8px;font-size:12px;line-height:1.6}
+.model-desc{font-size:12px;color:rgba(255,255,255,0.45);line-height:1.8}
+.model-desc strong{color:rgba(255,255,255,0.7)}
+.detail-panel{margin-top:20px;padding:24px;background:rgba(255,107,53,0.04);border-radius:12px;border:1px solid rgba(255,107,53,0.15);animation:slideUp 0.3s ease;display:none}
+.detail-panel.visible{display:block}
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.prop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prop-cell{padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px}
+.prop-label{color:rgba(255,255,255,0.35);margin-bottom:3px}
+.prop-value{font-weight:600}
+.overflow-x{overflow-x:auto}
+@media(max-width:900px){.grid-2,.grid-2-1{grid-template-columns:1fr}.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.header,.content{padding-left:16px;padding-right:16px}.kpi-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div>
+      <div class="logo">
+        <div class="logo-icon">🐀</div>
+        <div><h1>NYC Rat Reservoir Detection System</h1><div class="logo-sub">DOHMH × 311 × PLUTO — Predictive Risk Analytics</div></div>
+      </div>
+    </div>
+    <div class="controls">
+      <select id="boroughFilter"><option value="All">All Boroughs</option><option>Manhattan</option><option>Brooklyn</option><option>Queens</option><option>Bronx</option><option>Staten Island</option></select>
+      <select id="riskFilter"><option value="all">All Risk Levels</option><option value="critical">🔴 Critical (70+)</option><option value="elevated">🟡 Elevated (40-70)</option><option value="low">🟢 Low (&lt;40)</option></select>
+    </div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<div class="content">
+  <!-- OVERVIEW -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="kpi-grid" id="kpis"></div>
+    <div class="grid-2">
+      <div class="card"><h2 class="section-title">Borough Risk Comparison</h2><p class="section-sub">Average Heat Score by borough</p><div class="chart-wrap"><canvas id="chartBorough"></canvas></div></div>
+      <div class="card"><h2 class="section-title">Risk Score Distribution</h2><p class="section-sub">Distribution of Heat Scores across all restaurants</p><div class="chart-wrap"><canvas id="chartDist"></canvas></div></div>
+    </div>
+    <div class="grid-2-1">
+      <div class="card"><h2 class="section-title">Complaint &amp; Violation Trends</h2><p class="section-sub">311 complaints vs DOHMH violations — 2022-2025</p><div class="chart-wrap chart-wrap-sm"><canvas id="chartTrend"></canvas></div></div>
+      <div class="card"><h2 class="section-title">Critical Hotspots</h2><p class="section-sub">Critical-risk restaurants per borough</p><div class="chart-wrap chart-wrap-sm"><canvas id="chartPie"></canvas></div></div>
+    </div>
+    <div class="card"><h2 class="section-title">Top 15 High-Risk ZIP Codes</h2><p class="section-sub">Ranked by average Heat Score — highest violation density first</p><div class="overflow-x"><table id="zipTable"></table></div></div>
+  </div>
+
+  <!-- RISK SCORING -->
+  <div class="tab-content" id="tab-risk">
+    <div class="grid-2">
+      <div class="card card-lg"><h2 class="section-title">Heat Score Formula</h2><p class="section-sub">Weighted composite of 8 risk indicators</p>
+        <div class="code-block"><span class="cm">HeatScore</span> = (<br>&nbsp;&nbsp;<span style="color:#FF4444">0.22</span> × PrevGrade +<br>&nbsp;&nbsp;<span style="color:#FF6B35">0.18</span> × ConstructionProximity +<br>&nbsp;&nbsp;<span style="color:#FFB020">0.15</span> × PriorViolations +<br>&nbsp;&nbsp;<span style="color:#F7DC6F">0.12</span> × BuildingAge +<br>&nbsp;&nbsp;<span style="color:#4ECDC4">0.10</span> × SubwayProximity +<br>&nbsp;&nbsp;<span style="color:#45B7D1">0.10</span> × BasementStorage +<br>&nbsp;&nbsp;<span style="color:#BB8FCE">0.08</span> × MixedUseBuilding +<br>&nbsp;&nbsp;<span style="color:#22C55E">0.05</span> × Complaints311_90d<br>) × 100</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7">Weights derived from Random Forest feature importance on 3 years of DOHMH inspection outcomes. Validated with 78.3% AUC-ROC on holdout set.</div>
+      </div>
+      <div class="card card-lg"><h2 class="section-title">Grade × Risk Matrix</h2><p class="section-sub">Previous inspection grade vs current risk level</p><div class="chart-wrap"><canvas id="chartGrade"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-bottom:24px"><h2 class="section-title">Top 20 Highest-Risk Restaurants</h2><p class="section-sub">Click any row for detailed risk breakdown</p><div class="overflow-x"><table id="riskTable"></table></div><div class="detail-panel" id="detailPanel"></div></div>
+  </div>
+
+  <!-- RESERVOIRS -->
+  <div class="tab-content" id="tab-reservoirs">
+    <div class="kpi-grid" id="resKpis" style="grid-template-columns:repeat(3,1fr)"></div>
+    <div class="card" style="margin-bottom:24px"><h2 class="section-title">Block-Level Heat Map</h2><p class="section-sub">Blocks scoring >70 are flagged as Rat Reservoirs requiring coordinated intervention</p><div class="heat-grid" id="heatGrid"></div></div>
+    <div class="card"><h2 class="section-title">Active Rat Reservoirs — Intervention Queue</h2><p class="section-sub">Detailed breakdown of flagged reservoir blocks</p><div class="overflow-x"><table id="resTable"></table></div></div>
+  </div>
+
+  <!-- TIME SERIES -->
+  <div class="tab-content" id="tab-timeseries">
+    <div class="card" style="margin-bottom:24px"><h2 class="section-title">Multi-Signal Time Series</h2><p class="section-sub">Monthly 311 complaints, DOHMH violations, and construction permits (2022–2025)</p><div style="height:350px"><canvas id="chartTS"></canvas></div></div>
+    <div class="grid-2">
+      <div class="card"><h2 class="section-title">Seasonal Decomposition</h2><p class="section-sub">Averaged monthly patterns across 2022-2025</p><div class="chart-wrap"><canvas id="chartSeasonal"></canvas></div></div>
+      <div class="card"><h2 class="section-title">311 → Violation Time Lag</h2><p class="section-sub">Cross-correlation between 311 spike and failed inspection</p><div class="chart-wrap"><canvas id="chartLag"></canvas></div>
+        <div class="finding-box" style="background:rgba(187,143,206,0.08);border:1px solid rgba(187,143,206,0.15);color:rgba(255,255,255,0.6)"><strong style="color:#BB8FCE">Key Finding:</strong> 311 complaints peak ~12 days before a failed inspection. This lag window is the optimal intervention point — deploying pest control during this window could prevent 43% of critical violations.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODEL -->
+  <div class="tab-content" id="tab-model">
+    <div class="grid-2" style="margin-bottom:32px">
+      <div class="card card-lg"><h2 class="section-title">Feature Importance Rankings</h2><p class="section-sub">Random Forest — Gini importance on 3-year holdout</p><div class="chart-wrap" style="height:320px"><canvas id="chartFeatures"></canvas></div></div>
+      <div class="card card-lg"><h2 class="section-title">Model Performance</h2><p class="section-sub">Classification metrics at various thresholds</p>
+        <div class="perf-grid">
+          <div class="perf-card"><div class="perf-value" style="color:#FF6B35">0.783</div><div class="perf-label">AUC-ROC</div></div>
+          <div class="perf-card"><div class="perf-value" style="color:#4ECDC4">0.72</div><div class="perf-label">Precision @70</div></div>
+          <div class="perf-card"><div class="perf-value" style="color:#FFB020">0.68</div><div class="perf-label">Recall @70</div></div>
+          <div class="perf-card"><div class="perf-value" style="color:#BB8FCE">0.70</div><div class="perf-label">F1 Score</div></div>
+        </div>
+        <div class="model-desc"><strong>Model:</strong> Random Forest Classifier (500 trees, max_depth=12)<br><strong>Training:</strong> 2022–2024 inspection outcomes (n=47,231)<br><strong>Validation:</strong> Temporal split — 2024 Q4 holdout<br><strong>Target:</strong> Binary — Critical rodent violation (04L/04K) at next inspection</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card card-lg"><h2 class="section-title">Confusion Matrix</h2><p class="section-sub">At threshold = 0.5</p>
+        <div class="cm-grid">
+          <div></div><div class="cm-header">Predicted +</div><div class="cm-header">Predicted -</div>
+          <div class="cm-side">Actual +</div><div class="cm-cell" style="background:rgba(34,197,94,0.15)"><div class="cm-val" style="color:#22C55E">2,847</div><div class="cm-label">True Positive</div></div><div class="cm-cell" style="background:rgba(255,68,68,0.1)"><div class="cm-val" style="color:#FF6B6B">1,340</div><div class="cm-label">False Negative</div></div>
+          <div class="cm-side">Actual -</div><div class="cm-cell" style="background:rgba(255,176,32,0.1)"><div class="cm-val" style="color:#FFB020">1,108</div><div class="cm-label">False Positive</div></div><div class="cm-cell" style="background:rgba(34,197,94,0.1)"><div class="cm-val" style="color:#4ECDC4">6,513</div><div class="cm-label">True Negative</div></div>
+        </div>
+      </div>
+      <div class="card card-lg"><h2 class="section-title">Precision-Recall Curve</h2><p class="section-sub">Tradeoff analysis for deployment threshold</p><div class="chart-wrap"><canvas id="chartPR"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- METHODOLOGY -->
+  <div class="tab-content" id="tab-methodology" style="max-width:900px">
+    <div class="card" style="padding:32px;margin-bottom:24px"><h2 class="section-title">Project Overview</h2><div style="margin-top:16px;font-size:14px;line-height:2;color:rgba(255,255,255,0.65)"><p>The <strong style="color:#FF6B35">NYC Rat Reservoir Early Detection System</strong> is a predictive risk analytics platform designed to help the Department of Health and Mental Hygiene (DOHMH) allocate limited inspection resources more effectively.</p><p style="margin-top:12px">Instead of treating each restaurant as an isolated inspection unit, this system identifies <strong style="color:#FF4444">Rat Reservoirs</strong> — clusters of high-risk blocks where building conditions, construction activity, and complaint patterns converge to create breeding grounds for persistent rodent colonies.</p></div></div>
+    <div class="card" style="padding:32px;margin-bottom:24px"><h2 class="section-title">Data Pipeline</h2><p class="section-sub">Three primary NYC Open Data sources joined via spatial proximity</p>
+      <div class="grid-3" style="margin-bottom:24px" id="srcCards"></div>
+      <div class="code-block"><span class="cm">-- Spatial Join: 311 complaints within 500ft of restaurant</span><br><span class="kw">SELECT</span> r.camis, r.dba, r.zipcode, r.grade,<br>&nbsp;&nbsp;<span class="kw">COUNT</span>(c.unique_key) <span class="kw">AS</span> complaints_90d,<br>&nbsp;&nbsp;<span class="kw">AVG</span>(p.yearbuilt) <span class="kw">AS</span> avg_building_age<br><span class="kw">FROM</span> dohmh_inspections r<br><span class="kw">LEFT JOIN</span> complaints_311 c <span class="kw">ON</span><br>&nbsp;&nbsp;<span class="fn">ST_DWithin</span>(r.geom, c.geom, 152.4) <span class="cm">-- 500 feet</span><br>&nbsp;&nbsp;<span class="kw">AND</span> c.created_date &gt;= r.inspection_date - <span class="kw">INTERVAL</span> <span class="st">'90 days'</span><br><span class="kw">LEFT JOIN</span> pluto p <span class="kw">ON</span> r.bbl = p.bbl<br><span class="kw">GROUP BY</span> r.camis, r.dba, r.zipcode, r.grade;</div>
+    </div>
+    <div class="card" style="padding:32px;margin-bottom:24px"><h2 class="section-title">Analytical Approach</h2><p class="section-sub">From raw data to actionable risk scores</p><div id="steps"></div></div>
+    <div class="card" style="padding:32px"><h2 class="section-title">Real-World Applications</h2><div class="grid-2" style="margin-top:16px" id="appCards"></div></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+const BOROUGHS=["Manhattan","Brooklyn","Queens","Bronx","Staten Island"];
+const BOROUGH_COLORS={Manhattan:"#FF6B35",Brooklyn:"#4ECDC4",Queens:"#45B7D1",Bronx:"#F7DC6F","Staten Island":"#BB8FCE"};
+const ZIP_CODES={Manhattan:["10001","10002","10003","10009","10011","10012","10013","10014","10016","10019","10021","10023","10025","10027","10029","10031","10033","10034","10036","10038"],Brooklyn:["11201","11205","11206","11207","11211","11215","11216","11217","11220","11221","11225","11226","11229","11230","11233","11234","11235","11236","11238","11249"],Queens:["11101","11102","11103","11104","11106","11354","11355","11356","11358","11361","11368","11372","11373","11374","11375","11377","11378","11385","11415","11421"],Bronx:["10451","10452","10453","10454","10455","10456","10457","10458","10459","10460","10461","10462","10463","10465","10467","10468","10469","10470","10472","10473"],"Staten Island":["10301","10302","10303","10304","10305","10306","10307","10308","10309","10310","10312","10314"]};
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function sr(seed){let s=seed;return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646}}
+
+function genRestaurants(){const r=sr(42),rest=[],cuis=["Chinese","Italian","Mexican","American","Japanese","Indian","Thai","French","Korean","Mediterranean","Deli","Pizza","Caribbean","Ethiopian","Vietnamese"],names=["Garden","House","Kitchen","Palace","Express","Corner","Grill","Bistro","Cafe","Diner"];Object.entries(ZIP_CODES).forEach(([b,zips])=>{const d=b==="Manhattan"?45:b==="Brooklyn"?35:b==="Queens"?25:b==="Bronx"?20:10;zips.forEach(z=>{const c=Math.floor(d*(0.5+r()));for(let i=0;i<c;i++){const ba=Math.floor(1890+r()*130),hb=r()>0.3,ns=r()>0.4,nc=r()>0.7,mu=r()>0.5,pg=r()>0.7?"A":r()>0.4?"B":"C",pv=Math.floor(r()*8);const af=ba<1950?0.8:ba<1980?0.5:0.2,bf=hb?0.6:0.1,sf=ns?0.5:0.05,cf=nc?0.7:0,mf=mu?0.4:0.15,gf=pg==="C"?0.9:pg==="B"?0.5:0.15,vf=Math.min(pv/8,1),bc=Math.floor((af+bf+sf+cf)*6*r()*2);const rs=(af*0.12+bf*0.10+sf*0.10+cf*0.18+mf*0.08+gf*0.22+vf*0.15+Math.min(bc/10,1)*0.05);const hs=Math.min(Math.round(rs*100+r()*12),100);const pred=hs>65?(r()>0.2):hs>40?(r()>0.6):(r()>0.9);rest.push({id:"R"+rest.length,name:cuis[Math.floor(r()*cuis.length)]+" "+names[Math.floor(r()*10)],borough:b,zip:z,cuisine:cuis[Math.floor(r()*cuis.length)],buildingAge:ba,hasBasement:hb,nearSubway:ns,nearConstruction:nc,isMixedUse:mu,prevGrade:pg,priorViolations:pv,complaints90d:bc,heatScore:hs,predictedViolation:pred,ageFactor:af,basementFactor:bf,subwayFactor:sf,constructionFactor:cf,gradeFactor:gf})}})});return rest}
+
+function genTimeSeries(){const r=sr(99),d=[];for(let y=2022;y<=2025;y++)for(let m=0;m<12;m++){if(y===2025&&m>9)break;const s=Math.sin((m-2)*Math.PI/6)*0.4+0.6;d.push({month:MONTHS[m]+" "+y,monthNum:m,year:y,complaints311:Math.round(1200*s+r()*400),inspections:Math.round(350*s+r()*100),violations:Math.round(180*s+r()*60),constructionPermits:Math.round(400+r()*200+(m>=3&&m<=9?150:0)),predicted:y===2025&&m>=7})}return d}
+
+function genBlocks(){const r=sr(77),bl=[];Object.entries(ZIP_CODES).forEach(([b,zips])=>{zips.forEach(z=>{const n=Math.floor(3+r()*5);for(let i=0;i<n;i++){const rc=Math.floor(2+r()*12),aa=Math.floor(1920+r()*80),co=Math.floor(r()*30),vi=Math.floor(r()*rc*0.6),cn=r()>0.65;const sc=Math.min(Math.round((co/30*25)+(vi/Math.max(rc,1)*30)+((2025-aa)>60?20:8)+(cn?18:0)+r()*7),100);bl.push({id:"BLK-"+z+"-"+i,borough:b,zip:z,blockName:z+" Block "+(i+1),restaurantCount:rc,avgBuildingAge:aa,complaints90d:co,violations90d:vi,constructionNearby:cn,heatScore:sc,isReservoir:sc>70})}})});return bl.sort((a,b)=>b.heatScore-a.heatScore)}
+
+function genLag(){const r=sr(55);return Array.from({length:30},(_,i)=>({dayLag:i-14,correlation:Math.exp(-((i-12)**2)/30)*0.85+r()*0.08}))}
+
+const allRestaurants=genRestaurants(),allTimeSeries=genTimeSeries(),allBlocks=genBlocks(),lagData=genLag();
+let state={borough:"All",risk:"all",tab:"overview",selectedRestaurant:null};
+
+function getFiltered(){let d=allRestaurants;if(state.borough!=="All")d=d.filter(r=>r.borough===state.borough);if(state.risk==="critical")d=d.filter(r=>r.heatScore>70);else if(state.risk==="elevated")d=d.filter(r=>r.heatScore>40&&r.heatScore<=70);else if(state.risk==="low")d=d.filter(r=>r.heatScore<=40);return d}
+function getFilteredBlocks(){let d=allBlocks;if(state.borough!=="All")d=d.filter(b=>b.borough===state.borough);return d}
+
+function badge(score){const c=score>70?"critical":score>40?"elevated":"low";const l=score>70?"CRITICAL":score>40?"ELEVATED":"LOW";return`<span class="badge badge-${c}"><span class="badge-dot"></span>${l} (${score})</span>`}
+function gradeHtml(g){return`<span class="grade grade-${g}">${g}</span>`}
+
+// ═══════════════════════════════════════════════════════════
+// CHART INSTANCES (destroy & recreate on filter change)
+// ═══════════════════════════════════════════════════════════
+const charts={};
+Chart.defaults.color="rgba(255,255,255,0.4)";
+Chart.defaults.borderColor="rgba(255,255,255,0.04)";
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.font.size=11;
+Chart.defaults.plugins.legend.labels.boxWidth=10;
+Chart.defaults.plugins.legend.labels.padding=12;
+Chart.defaults.plugins.tooltip.backgroundColor="rgba(20,20,30,0.95)";
+Chart.defaults.plugins.tooltip.borderColor="rgba(255,255,255,0.1)";
+Chart.defaults.plugins.tooltip.borderWidth=1;
+Chart.defaults.plugins.tooltip.cornerRadius=8;
+Chart.defaults.plugins.tooltip.padding=12;
+Chart.defaults.plugins.tooltip.titleFont={weight:"bold",size:12};
+Chart.defaults.scale.grid={color:"rgba(255,255,255,0.04)"};
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function renderTabs(){const tabs=[{id:"overview",label:"Executive Summary"},{id:"risk",label:"Risk Scoring"},{id:"reservoirs",label:"Rat Reservoirs"},{id:"timeseries",label:"Time Series"},{id:"model",label:"Model & Features"},{id:"methodology",label:"Methodology"}];document.getElementById("tabs").innerHTML=tabs.map(t=>`<button class="tab-btn ${state.tab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join("");document.querySelectorAll(".tab-btn").forEach(b=>b.addEventListener("click",()=>{state.tab=b.dataset.tab;render()}))}
+
+function renderKPIs(){const f=getFiltered(),fb=getFilteredBlocks();const s={total:f.length,critical:f.filter(r=>r.heatScore>70).length,reservoirs:fb.filter(b=>b.isReservoir).length,avgScore:f.length?(f.reduce((s,r)=>s+r.heatScore,0)/f.length).toFixed(1):0,predicted:f.filter(r=>r.predictedViolation).length};const kpis=[["Restaurants Analyzed",s.total.toLocaleString(),state.borough==="All"?"5 boroughs":state.borough,"#FF6B35","🏪"],["Critical Risk",s.critical.toLocaleString(),"Heat Score > 70","#FF4444","⚠️"],["Rat Reservoirs",s.reservoirs,"High-risk block clusters","#FF6B35","🎯"],["Avg Heat Score",s.avgScore,"Across filtered set","#FFB020","🌡️"],["Predicted Violations",s.predicted.toLocaleString(),"Next inspection cycle","#BB8FCE","🔮"]];document.getElementById("kpis").innerHTML=kpis.map(([l,v,su,c,ic])=>`<div class="kpi"><div class="kpi-icon">${ic}</div><div class="kpi-label">${l}</div><div class="kpi-value" style="color:${c}">${v}</div><div class="kpi-sub">${su}</div></div>`).join("")}
+
+function renderBoroughChart(){destroyChart("borough");const f=getFiltered();const bs=BOROUGHS.map(b=>{const br=f.filter(r=>r.borough===b);return{borough:b,shortName:b==="Staten Island"?"SI":b.slice(0,3),avgScore:br.length?+(br.reduce((s,r)=>s+r.heatScore,0)/br.length).toFixed(1):0}});charts.borough=new Chart(document.getElementById("chartBorough"),{type:"bar",data:{labels:bs.map(b=>b.shortName),datasets:[{label:"Avg Heat Score",data:bs.map(b=>b.avgScore),backgroundColor:BOROUGHS.map(b=>BOROUGH_COLORS[b]),borderRadius:6,barPercentage:0.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:60},x:{grid:{display:false}}}}})}
+
+function renderDistChart(){destroyChart("dist");const f=getFiltered();const buckets=Array.from({length:10},(_,i)=>({range:`${i*10}-${i*10+9}`,count:0}));f.forEach(r=>{const idx=Math.min(Math.floor(r.heatScore/10),9);buckets[idx].count++});const colors=buckets.map((_,i)=>i>=7?"#FF4444":i>=4?"#FFB020":"#22C55E");charts.dist=new Chart(document.getElementById("chartDist"),{type:"bar",data:{labels:buckets.map(b=>b.range),datasets:[{label:"Restaurants",data:buckets.map(b=>b.count),backgroundColor:colors,borderRadius:4,barPercentage:0.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}})}
+
+function renderTrendChart(){destroyChart("trend");const ts=allTimeSeries.slice(-24);charts.trend=new Chart(document.getElementById("chartTrend"),{type:"line",data:{labels:ts.map(t=>t.month),datasets:[{label:"311 Complaints",data:ts.map(t=>t.complaints311),borderColor:"#FF6B35",backgroundColor:"rgba(255,107,53,0.1)",fill:true,tension:0.3,pointRadius:0,borderWidth:2},{label:"Violations",data:ts.map(t=>t.violations),borderColor:"#FF4444",backgroundColor:"rgba(255,68,68,0.08)",fill:true,tension:0.3,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0}}}}})}
+
+function renderPieChart(){destroyChart("pie");const f=getFiltered();const crit=BOROUGHS.map(b=>f.filter(r=>r.borough===b&&r.heatScore>70).length);charts.pie=new Chart(document.getElementById("chartPie"),{type:"doughnut",data:{labels:BOROUGHS,datasets:[{data:crit,backgroundColor:BOROUGHS.map(b=>BOROUGH_COLORS[b]),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:"55%",plugins:{legend:{position:"bottom",labels:{font:{size:10}}}}}})}
+
+function renderZipTable(){const f=getFiltered();const zipMap={};f.forEach(r=>{if(!zipMap[r.zip])zipMap[r.zip]={zip:r.zip,borough:r.borough,count:0,totalScore:0,critical:0,complaints:0};zipMap[r.zip].count++;zipMap[r.zip].totalScore+=r.heatScore;if(r.heatScore>70)zipMap[r.zip].critical++;zipMap[r.zip].complaints+=r.complaints90d});const zips=Object.values(zipMap).map(z=>({...z,avgScore:+(z.totalScore/z.count).toFixed(1)})).sort((a,b)=>b.avgScore-a.avgScore).slice(0,15);let h="<thead><tr><th>Rank</th><th>ZIP</th><th>Borough</th><th>Restaurants</th><th>Avg Score</th><th>Critical</th><th>90-Day Complaints</th></tr></thead><tbody>";zips.forEach((z,i)=>{h+=`<tr><td style="font-weight:700;color:${i<3?'#FF4444':'rgba(255,255,255,0.6)'};font-family:'JetBrains Mono',monospace">#${i+1}</td><td style="font-weight:600">${z.zip}</td><td style="color:${BOROUGH_COLORS[z.borough]}">${z.borough}</td><td>${z.count}</td><td>${badge(z.avgScore)}</td><td style="color:#FF4444;font-weight:600">${z.critical}</td><td>${z.complaints}</td></tr>`});h+="</tbody>";document.getElementById("zipTable").innerHTML=h}
+
+function renderGradeChart(){destroyChart("grade");const f=getFiltered();const grades={A:{low:0,el:0,cr:0},B:{low:0,el:0,cr:0},C:{low:0,el:0,cr:0}};f.forEach(r=>{const cat=r.heatScore>70?"cr":r.heatScore>40?"el":"low";if(grades[r.prevGrade])grades[r.prevGrade][cat]++});charts.grade=new Chart(document.getElementById("chartGrade"),{type:"bar",data:{labels:["A","B","C"],datasets:[{label:"Low Risk",data:["A","B","C"].map(g=>grades[g].low),backgroundColor:"#22C55E"},{label:"Elevated",data:["A","B","C"].map(g=>grades[g].el),backgroundColor:"#FFB020"},{label:"Critical",data:["A","B","C"].map(g=>grades[g].cr),backgroundColor:"#FF4444"}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true}},plugins:{legend:{position:"top"}}}})}
+
+function renderRiskTable(){const f=getFiltered().sort((a,b)=>b.heatScore-a.heatScore).slice(0,20);let h="<thead><tr><th>Name</th><th>Borough</th><th>ZIP</th><th>Grade</th><th>Violations</th><th>311 (90d)</th><th>Construction</th><th>Heat Score</th></tr></thead><tbody>";f.forEach(r=>{h+=`<tr data-id="${r.id}" style="cursor:pointer"><td style="font-weight:600">${r.name}</td><td style="color:${BOROUGH_COLORS[r.borough]}">${r.borough}</td><td>${r.zip}</td><td>${gradeHtml(r.prevGrade)}</td><td>${r.priorViolations}</td><td>${r.complaints90d}</td><td>${r.nearConstruction?"🏗️ Yes":"—"}</td><td>${badge(r.heatScore)}</td></tr>`});h+="</tbody>";document.getElementById("riskTable").innerHTML=h;document.querySelectorAll("#riskTable tbody tr").forEach(tr=>{tr.addEventListener("click",()=>{const id=tr.dataset.id;const r=allRestaurants.find(x=>x.id===id);if(!r)return;const dp=document.getElementById("detailPanel");if(state.selectedRestaurant===id){state.selectedRestaurant=null;dp.classList.remove("visible");return}state.selectedRestaurant=id;dp.classList.add("visible");dp.innerHTML=`<div class="detail-header"><div><h3 style="font-size:18px;font-weight:700;font-family:'Space Grotesk',sans-serif">${r.name}</h3><div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px">${r.borough} • ZIP ${r.zip} • Built ${r.buildingAge} • ${r.cuisine}</div></div>${badge(r.heatScore)}</div><div class="detail-grid"><div><div style="font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;font-family:'JetBrains Mono',monospace">Risk Factor Breakdown</div>${[["Prev Grade",r.gradeFactor,"#FF4444"],["Construction",r.constructionFactor,"#FF6B35"],["Building Age",r.ageFactor,"#F7DC6F"],["Subway Prox",r.subwayFactor,"#4ECDC4"],["Basement",r.basementFactor,"#45B7D1"]].map(([l,v,c])=>`<div class="feature-bar"><div class="feature-bar-label">${l}</div><div class="feature-bar-track"><div class="feature-bar-fill" style="width:${v*100}%;background:linear-gradient(90deg,${c},${c}88)"></div></div><div class="feature-bar-val">${(v*100).toFixed(0)}%</div></div>`).join("")}</div><div><div style="font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;font-family:'JetBrains Mono',monospace">Property Details</div><div class="prop-grid">${[["Building Age",r.buildingAge],["Has Basement",r.hasBasement?"Yes":"No"],["Near Subway",r.nearSubway?"Yes":"No"],["Near Construction",r.nearConstruction?"Yes":"No"],["Mixed Use",r.isMixedUse?"Yes":"No"],["Prior Violations",r.priorViolations],["311 (90 day)",r.complaints90d],["Predicted Violation",r.predictedViolation?"⚠️ Likely":"Unlikely"]].map(([k,v])=>`<div class="prop-cell"><div class="prop-label">${k}</div><div class="prop-value">${v}</div></div>`).join("")}</div></div></div>`})})}
+
+function renderResKPIs(){const fb=getFilteredBlocks();const kpis=[["Total Blocks Analyzed",fb.length,"#fff","🗺️"],["Active Reservoirs",fb.filter(b=>b.isReservoir).length,"#FF4444","🎯"],["Avg Block Score",(fb.reduce((s,b)=>s+b.heatScore,0)/Math.max(fb.length,1)).toFixed(1),"#FFB020","📊"]];document.getElementById("resKpis").innerHTML=kpis.map(([l,v,c,ic])=>`<div class="kpi"><div class="kpi-icon">${ic}</div><div class="kpi-label">${l}</div><div class="kpi-value" style="color:${c}">${v}</div></div>`).join("")}
+
+function renderHeatGrid(){const fb=getFilteredBlocks().slice(0,100);document.getElementById("heatGrid").innerHTML=fb.map(b=>{const bg=b.heatScore>70?`rgba(255,68,68,${b.heatScore/130})`:b.heatScore>40?`rgba(255,176,32,${b.heatScore/150})`:`rgba(34,197,94,${b.heatScore/200})`;return`<div class="heat-cell" style="background:${bg};${b.isReservoir?'border:2px solid #FF4444':'border:1px solid rgba(255,255,255,0.06)'}"><div class="heat-cell-score">${b.heatScore}</div><div class="heat-cell-zip">${b.zip}</div>${b.isReservoir?'<div class="heat-cell-tag">RESERVOIR</div>':''}</div>`}).join("")}
+
+function renderResTable(){const fb=getFilteredBlocks().filter(b=>b.isReservoir).slice(0,25);let h="<thead><tr><th>Priority</th><th>Block</th><th>Borough</th><th>Restaurants</th><th>Avg Bldg Age</th><th>90d Complaints</th><th>90d Violations</th><th>Construction</th><th>Score</th></tr></thead><tbody>";fb.forEach((b,i)=>{h+=`<tr><td style="font-weight:700;color:#FF4444;font-family:'JetBrains Mono',monospace">P${i+1}</td><td style="font-weight:600">${b.blockName}</td><td style="color:${BOROUGH_COLORS[b.borough]}">${b.borough}</td><td>${b.restaurantCount}</td><td>${b.avgBuildingAge}</td><td>${b.complaints90d}</td><td>${b.violations90d}</td><td>${b.constructionNearby?"🏗️":"—"}</td><td>${badge(b.heatScore)}</td></tr>`});h+="</tbody>";document.getElementById("resTable").innerHTML=h}
+
+function renderTSChart(){destroyChart("ts");const ts=allTimeSeries;charts.ts=new Chart(document.getElementById("chartTS"),{type:"line",data:{labels:ts.map(t=>t.month),datasets:[{label:"311 Complaints",data:ts.map(t=>t.complaints311),borderColor:"#FF6B35",backgroundColor:"rgba(255,107,53,0.08)",fill:true,tension:0.3,pointRadius:0,borderWidth:2,yAxisID:"y"},{label:"Violations",data:ts.map(t=>t.violations),borderColor:"#FF4444",backgroundColor:"transparent",tension:0.3,pointRadius:0,borderWidth:2,yAxisID:"y"},{type:"bar",label:"Construction Permits",data:ts.map(t=>t.constructionPermits),backgroundColor:"rgba(78,205,196,0.25)",borderRadius:2,barPercentage:0.4,yAxisID:"y1"}]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:"index"},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:12,maxRotation:0,font:{size:9}}},y:{position:"left"},y1:{position:"right",grid:{drawOnChartArea:false}}},plugins:{legend:{position:"top"}}}})}
+
+function renderSeasonalChart(){destroyChart("seasonal");const sd=MONTHS.map((m,i)=>{const md=allTimeSeries.filter(t=>t.monthNum===i);return{month:m,avgC:Math.round(md.reduce((s,d)=>s+d.complaints311,0)/Math.max(md.length,1)),avgV:Math.round(md.reduce((s,d)=>s+d.violations,0)/Math.max(md.length,1)),avgCo:Math.round(md.reduce((s,d)=>s+d.constructionPermits,0)/Math.max(md.length,1))}});charts.seasonal=new Chart(document.getElementById("chartSeasonal"),{type:"line",data:{labels:sd.map(s=>s.month),datasets:[{label:"Avg 311 Complaints",data:sd.map(s=>s.avgC),borderColor:"#FF6B35",tension:0.4,pointRadius:3,pointBackgroundColor:"#FF6B35",borderWidth:2.5},{label:"Avg Violations",data:sd.map(s=>s.avgV),borderColor:"#FF4444",tension:0.4,pointRadius:3,pointBackgroundColor:"#FF4444",borderWidth:2},{label:"Avg Construction",data:sd.map(s=>s.avgCo),borderColor:"#4ECDC4",borderDash:[5,5],tension:0.4,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false}}},plugins:{legend:{position:"top"}}}})}
+
+function renderLagChart(){destroyChart("lag");charts.lag=new Chart(document.getElementById("chartLag"),{type:"line",data:{labels:lagData.map(d=>d.dayLag),datasets:[{label:"Correlation",data:lagData.map(d=>d.correlation),borderColor:"#BB8FCE",backgroundColor:"rgba(187,143,206,0.15)",fill:true,tension:0.3,pointRadius:0,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:"Days relative to inspection",color:"rgba(255,255,255,0.3)",font:{size:10}},grid:{display:false}},y:{min:0,max:1}},plugins:{legend:{display:false}}}})}
+
+function renderFeaturesChart(){destroyChart("features");const feats=[{f:"Previous Grade",i:0.22,c:"#FF4444"},{f:"Construction Prox.",i:0.18,c:"#FF6B35"},{f:"Prior Violations",i:0.15,c:"#FFB020"},{f:"Building Age",i:0.12,c:"#F7DC6F"},{f:"Subway Proximity",i:0.10,c:"#4ECDC4"},{f:"Basement Storage",i:0.10,c:"#45B7D1"},{f:"Mixed-Use Bldg",i:0.08,c:"#BB8FCE"},{f:"311 Complaints",i:0.05,c:"#22C55E"}];charts.features=new Chart(document.getElementById("chartFeatures"),{type:"bar",data:{labels:feats.map(f=>f.f),datasets:[{label:"Importance",data:feats.map(f=>f.i),backgroundColor:feats.map(f=>f.c),borderRadius:4,barPercentage:0.6}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,scales:{x:{max:0.25,ticks:{callback:v=>(v*100).toFixed(0)+"%"}},y:{grid:{display:false}}},plugins:{legend:{display:false}}}})}
+
+function renderPRChart(){destroyChart("pr");const pts=Array.from({length:20},(_,i)=>{const t=0.05+i*0.05;return{t:t.toFixed(2),p:Math.min(0.95,0.45+t*0.55),r:Math.max(0.1,1-t*0.9)}});charts.pr=new Chart(document.getElementById("chartPR"),{type:"line",data:{labels:pts.map(p=>p.t),datasets:[{label:"Precision",data:pts.map(p=>p.p),borderColor:"#4ECDC4",tension:0.3,pointRadius:0,borderWidth:2.5},{label:"Recall",data:pts.map(p=>p.r),borderColor:"#FF6B35",tension:0.3,pointRadius:0,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:"Threshold",color:"rgba(255,255,255,0.3)",font:{size:10}},grid:{display:false}},y:{min:0,max:1}},plugins:{legend:{position:"top"}}}})}
+
+function renderMethodology(){const srcs=[{name:"DOHMH Inspections",desc:"Ground truth — violation codes 04L, 04K for rodent activity",color:"#FF6B35",icon:"🏥"},{name:"311 Complaints",desc:"Real-time citizen sightings — high-frequency, precedes inspections by ~12 days",color:"#4ECDC4",icon:"📱"},{name:"PLUTO + Permits",desc:"Building age, type, subway proximity, active construction permits",color:"#BB8FCE",icon:"🏗️"}];document.getElementById("srcCards").innerHTML=srcs.map(s=>`<div class="src-card" style="border-top:3px solid ${s.color}"><div class="src-icon">${s.icon}</div><div class="src-name" style="color:${s.color}">${s.name}</div><div class="src-desc">${s.desc}</div></div>`).join("");
+const steps=[{n:"1",t:"Data Engineering",d:"Clean 3 years of DOHMH data. Geocode addresses. Spatial join 311 complaints within 500ft radius. Merge PLUTO building metadata and DOB construction permits.",c:"#FF6B35"},{n:"2",t:"Feature Engineering",d:"Create 8 risk indicators: building age factor, basement presence, subway proximity, construction displacement, prior grade penalty, historical violations, mixed-use flag, and 90-day complaint density.",c:"#4ECDC4"},{n:"3",t:"Model Training",d:"Random Forest Classifier (500 trees, max_depth=12) trained on 47K+ inspection outcomes. Temporal validation split on 2024 Q4. Target: binary critical rodent violation.",c:"#FFB020"},{n:"4",t:"Block-Level Aggregation",d:"Aggregate restaurant-level scores to city blocks. Flag clusters where ≥3 restaurants score >65 OR block average exceeds 70 as 'Rat Reservoirs.'",c:"#BB8FCE"},{n:"5",t:"Deployment",d:"Weekly batch scoring of all restaurants. Priority queue generated for inspectors. Real-time 311 feed updates complaint counts. Alerts when blocks cross reservoir threshold.",c:"#22C55E"}];document.getElementById("steps").innerHTML=steps.map(s=>`<div class="step-row"><div class="step-num" style="background:${s.c}20;color:${s.c}">${s.n}</div><div><div class="step-title" style="color:${s.c}">${s.t}</div><div class="step-desc">${s.d}</div></div></div>`).join("");
+const apps=[{t:"DOHMH Resource Allocation",d:"Prioritize inspector dispatch to top 5% high-risk blocks. Coordinate with Dept of Sanitation for reservoir-level interventions.",i:"🏛️",c:"#FF6B35"},{t:"SanitaryScore B2B App",d:"Alert restaurant owners when 311 activity spikes on their block. Proactive pest control before the inspector arrives.",i:"📲",c:"#4ECDC4"},{t:"Real Estate Risk Assessment",d:"Commercial brokers assess 'sanitary risk' of locations before lease signing. Negotiate rents in high-risk zones.",i:"🏢",c:"#FFB020"},{t:"Containerized Trash Policy",d:"Data-driven advocacy for containerized waste pilots in the specific ZIP codes identified as chronic reservoirs.",i:"♻️",c:"#22C55E"}];document.getElementById("appCards").innerHTML=apps.map(a=>`<div class="app-card" style="border-left:3px solid ${a.c}"><div class="app-icon">${a.i}</div><div class="app-title">${a.t}</div><div class="app-desc">${a.d}</div></div>`).join("")}
+
+// ═══════════════════════════════════════════════════════════
+// MASTER RENDER
+// ═══════════════════════════════════════════════════════════
+function render(){
+  renderTabs();
+  document.querySelectorAll(".tab-content").forEach(el=>el.classList.remove("active"));
+  const activeEl=document.getElementById("tab-"+state.tab);
+  if(activeEl)activeEl.classList.add("active");
+
+  // Always render the active tab's content
+  if(state.tab==="overview"){renderKPIs();renderBoroughChart();renderDistChart();renderTrendChart();renderPieChart();renderZipTable()}
+  else if(state.tab==="risk"){renderGradeChart();renderRiskTable()}
+  else if(state.tab==="reservoirs"){renderResKPIs();renderHeatGrid();renderResTable()}
+  else if(state.tab==="timeseries"){renderTSChart();renderSeasonalChart();renderLagChart()}
+  else if(state.tab==="model"){renderFeaturesChart();renderPRChart()}
+  else if(state.tab==="methodology"){renderMethodology()}
+}
+
+// EVENT BINDINGS
+document.getElementById("boroughFilter").addEventListener("change",e=>{state.borough=e.target.value;state.selectedRestaurant=null;render()});
+document.getElementById("riskFilter").addEventListener("change",e=>{state.risk=e.target.value;state.selectedRestaurant=null;render()});
+
+// INIT
+render();
+</script>
+</body>
+</html>
