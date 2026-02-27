@@ -1,1 +1,2 @@
 # Hackathon2-27-2026
+This project addresses the persistent public health challenge of rodent infestations of New York City. By identifying "Rat Resourvoirs" (clusters of high-risk restaurants), we move beyond reactive 311 complaints to predictive risk modeling. The goal is to provide our main customer the NYC Department of Health and Mental Health (DOHMH) and local business owners with data driven warning signs to mitigate infestations before they lead to failed inspections or public health hazards.
